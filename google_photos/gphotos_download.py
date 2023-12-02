@@ -16,12 +16,12 @@ import pickle
 import os
 import json
 import datetime
+import sys
 
 import requests
 import pandas as pd
 
-from google_auth_oauthlib.flow import Flow, InstalledAppFlow
-from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 
@@ -55,7 +55,7 @@ class GooglePhotosApi:
 
         if not os.path.isfile(client_secret_file):
             print(f'Unable to read credentials file on {client_secret_file}')
-            exit(10)
+            sys.exit(10)
 
         if scopes is None:
             scopes = self.SCOPE_READ_ONLY
@@ -123,7 +123,7 @@ class GooglePhotosApi:
                 timeout=10)
         except requests.exceptions.RequestException as ex:
             print('search_media_on_date error', ex.response.text)
-            exit(1)
+            sys.exit(1)
 
         return res
 
@@ -143,22 +143,15 @@ class GooglePhotosApi:
         # create request for specified date
         search_response = self.search_media_on_date(year, month, day)
 
-        try:
-            for item in search_response.json().get('mediaItems', []):
-                items_df = pd.DataFrame(item)
-                items_df = items_df.rename(columns={"mediaMetadata": "creationTime"})
-                items_df.set_index('creationTime')
-                items_df = items_df[items_df.index == 'creationTime']
+        for item in search_response.json().get('mediaItems', []):
+            items_df = pd.DataFrame(item)
+            items_df = items_df.rename(columns={"mediaMetadata": "creationTime"})
+            items_df.set_index('creationTime')
+            items_df = items_df[items_df.index == 'creationTime']
 
-                # append the existing media_items data frame
-                items_list_df = pd.concat([items_list_df, items_df])
-                media_items_df = pd.concat([media_items_df, items_df])
-
-        except Exception as ex:
-            print(type(ex))
-            print('..', ex)
-            print('..', search_response.text)
-            exit(2)
+            # append the existing media_items data frame
+            items_list_df = pd.concat([items_list_df, items_df])
+            media_items_df = pd.concat([media_items_df, items_df])
 
         return (items_list_df, media_items_df)
 
@@ -179,7 +172,7 @@ def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
     main_path = os.path.expanduser(target_folder)
     if not os.path.isdir(main_path):
         print(f'Target folder "{main_path}" does NOT exists.')
-        exit(1)
+        sys.exit(1)
 
     # create a list with all dates between start date and today
     sdate = datetime.datetime.strptime(from_date, date_format).date()
@@ -230,7 +223,7 @@ def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
                 response = requests.get(url, timeout=30)
 
                 file_name = item.filename
-                print('  ::>', folder_name, file_name)
+                print(f'  :{index}:>', folder_name, file_name)
 
                 # TODO: VIDEOS COME AS PICTURES
                 with open(os.path.join(folder_name, file_name), 'wb') as f:
