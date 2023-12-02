@@ -155,6 +155,67 @@ class GooglePhotosApi:
 
         return (items_list_df, media_items_df)
 
+# ------ GooglePhotosApi ------
+
+
+def get_items_file(items_df, dirname):
+    """ Proper request to download items """
+    for index, item in items_df.iterrows():
+        response = requests.get(
+            item.baseUrl + '=d',  # =d Full resolution instead of transcode
+            timeout=30)
+
+        file_name = item.filename
+        print(f'  :{index}:>', dirname, file_name)
+
+        # TODO: VIDEOS COME AS PICTURES
+        with open(os.path.join(dirname, file_name), 'wb') as f:
+            f.write(response.content)
+            f.close()
+
+
+def download_photos(gapi, date_list, main_path, existing_files):
+    """ Download all not existing photos into the main path folder structure """
+    media_items_df = pd.DataFrame()
+    existing_files_df = pd.DataFrame(existing_files)
+    existing_files_df = existing_files_df.rename(columns={0: "filename"})
+
+    for ddate in date_list:
+        # Get photos from the account
+        items_search_df, media_items_df = gapi.get_media_info(
+            year=ddate.year,
+            month=ddate.month,
+            day=ddate.day,
+            media_items_df=media_items_df)
+
+        if len(items_search_df) == 0:
+            print(f'No media items found for date: {ddate.year} / {ddate.month} / {ddate.day}')
+
+        else:
+            # Create folders by year/month
+            folder_name = f'{main_path}/{ddate.year}/{ddate.month}'
+            if not os.path.exists(folder_name):
+                os.makedirs(folder_name)
+
+            # Discard filenames already downloaded
+            if existing_files_df.empty:
+                not_downloaded_df = items_search_df.copy()
+            else:
+                not_downloaded_df = pd.merge(
+                    items_search_df,
+                    existing_files_df,
+                    on='filename',
+                    how='left',
+                    indicator=True).query('_merge=="left_only"')
+                # not_downloaded_df.head(2)
+
+            # Download new items
+            info_msg = f'{len(not_downloaded_df.index)}/{len(items_search_df.index)}'
+            info_msg += f' new items found for date: {ddate.year} / {ddate.month} / {ddate.day}'
+            print(info_msg)
+
+            get_items_file(not_downloaded_df, folder_name)
+
 
 def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
     """
@@ -182,56 +243,13 @@ def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
 
     # Get list of existing photos
     existing_files = [f for dp, dn, fn in os.walk(main_path) for f in fn]
-    existing_files_df = pd.DataFrame(existing_files)
-    existing_files_df = existing_files_df.rename(columns={0: "filename"})
+    # existing_files_df = pd.DataFrame(existing_files)
+    # existing_files_df = existing_files_df.rename(columns={0: "filename"})
     # existing_files_df.head(2)
 
     # API call
-    media_items_df = pd.DataFrame()
-    for ddate in date_list:
-        # Get photos from the account
-        items_search_df, media_items_df = google_photos_api.get_media_info(
-            year=ddate.year,
-            month=ddate.month,
-            day=ddate.day,
-            media_items_df=media_items_df)
+    download_photos(google_photos_api, date_list, existing_files, )
 
-        if len(items_search_df) > 0:
-            # Folders by year/month
-            folder_name = f'{main_path}/{ddate.year}/{ddate.month}'
-            if not os.path.exists(folder_name):
-                os.makedirs(folder_name)
-
-            # Check filenames not downloaded yet (search - existing)
-            not_downloaded_df = items_search_df.copy()
-            if not existing_files_df.empty:
-                not_downloaded_df = pd.merge(
-                    items_search_df,
-                    existing_files_df,
-                    on='filename',
-                    how='left',
-                    indicator=True).query('_merge=="left_only"')
-                # not_downloaded_df.head(2)
-
-            # download all items in items_not_yet_downloaded
-            info_msg = f'{len(not_downloaded_df.index)}/{len(items_search_df.index)}'
-            info_msg += f' new items found for date: {ddate.year} / {ddate.month} / {ddate.day}'
-            print(info_msg)
-
-            for index, item in not_downloaded_df.iterrows():
-                url = item.baseUrl + '=d'  # Full resolution instead of transcode
-                response = requests.get(url, timeout=30)
-
-                file_name = item.filename
-                print(f'  :{index}:>', folder_name, file_name)
-
-                # TODO: VIDEOS COME AS PICTURES
-                with open(os.path.join(folder_name, file_name), 'wb') as f:
-                    f.write(response.content)
-                    f.close()
-
-        else:
-            print(f'No media items found for date: {ddate.year} / {ddate.month} / {ddate.day}')
 
 
 if __name__ == "__main__":
