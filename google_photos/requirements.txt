@@ -1,0 +1,4 @@
+requests==2.27.1
+pandas==1.4.2
+google-auth-oauthlib==0.5.1
+google-api-python-client==2.47.0
