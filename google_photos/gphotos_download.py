@@ -130,7 +130,7 @@ class GooglePhotosApi:
     def get_media_info(self, year, month, day, media_items_df):
         """
         Args:
-            year, month, day: day for the filter of the API call 
+            year, month, day: day for the filter of the API call
             media_items_df: existing data frame with all find media items so far
         Return:
             media_items_df: media items data frame extended by the articles found for the specified tag
