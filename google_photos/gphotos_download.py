@@ -127,7 +127,6 @@ class GooglePhotosApi:
 
         return res
 
-
     def get_media_info(self, year, month, day, media_items_df):
         """
         Args:
@@ -248,8 +247,7 @@ def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
     # existing_files_df.head(2)
 
     # API call
-    download_photos(google_photos_api, date_list, existing_files, )
-
+    download_photos(google_photos_api, date_list, main_path, existing_files)
 
 
 if __name__ == "__main__":
