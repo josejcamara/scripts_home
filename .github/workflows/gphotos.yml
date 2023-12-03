@@ -1,6 +1,9 @@
 name: gphotos_ci
 
-on: [push]
+on:
+  push:
+    paths:
+    - 'google_photos/**'
 
 jobs:
   build:
