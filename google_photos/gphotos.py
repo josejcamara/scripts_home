@@ -37,7 +37,7 @@ def get_items_file(items_df, dirname):
             timeout=30)
 
         file_name = item.filename
-        print(f'  :{index}:>', dirname, file_name)
+        print(f'  :{index+1}:>', dirname, file_name)
 
         # TODO: VIDEOS COME AS PICTURES
         with open(os.path.join(dirname, file_name), 'wb') as f:
@@ -64,7 +64,7 @@ def download_photos(gapi, date_list, main_path, existing_files):
 
         else:
             # Create folders by year/month
-            folder_name = f'{main_path}/{ddate.year}/{ddate.month}'
+            folder_name = f'{main_path}/{ddate.year}/{ddate.month:02d}'
             if not os.path.exists(folder_name):
                 os.makedirs(folder_name)
 
@@ -107,12 +107,19 @@ def main(date_from, date_to, target_folder):
         print(f'Date list empty. No days between {date_from} and {date_to}')
         sys.exit(5)
 
-    print(f'Checking photos from {date_list[0]} to {date_list[-1]} into {main_path}')
-
     # Get list of existing photos
-    existing_files = [f for dp, dn, fn in os.walk(main_path) for f in fn]
+    print(f'Checking for photos from {date_list[0]} to {date_list[-1]} in {main_path}')
+    existing_files = []
+    for y in range(date_from.year, date_to.year+1):
+        # Too slow, add into download_photos, by year or month!!
+        print(os.path.join(main_path, str(y)))
+        existing_files.extend(
+            [f for dp, dn, fn in os.walk(os.path.join(main_path, str(y))) for f in fn]
+            )
+    print(f'Found {len(existing_files)} local files. ')
 
     # API call
+    print("Starting download...")
     download_photos(google_photos_api, date_list, main_path, existing_files)
 
 
