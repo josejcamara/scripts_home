@@ -48,13 +48,19 @@ For example: `gphotos.py get ~/gphotos -f 2023/12/01`
 ## Create virtualenv and install required packages
 
 Create a virtual environment 
-> python3 -m venv venv
+> make setup
 
-Activate it 
-> . ./venv/bin/activate 
+Activate venv
+> source ./venv/bin/activate 
 
 Install requirements 
-> pip install -r requirements.txt
+> make deps
+
+Run Lint analysis
+> make lint
+
+Run Test suite
+> make test
 
 # References
 - https://github.com/polzerdo55862/google-photos-api

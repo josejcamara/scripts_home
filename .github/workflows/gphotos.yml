@@ -5,6 +5,14 @@ on:
     paths:
     - 'google_photos/**'
 
+  pull_request:
+    types: [opened, reopened, review_requested]
+    branches:
+      - 'master'
+    # paths:
+    #   - 'google_photos/**'
+  
+
 jobs:
   build:
     runs-on: ubuntu-latest
