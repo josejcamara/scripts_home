@@ -29,7 +29,19 @@ This script uses the Google API and you'll need to enable that feature in your a
 - Download the JSON file to the created credentials, rename it to "gphotos_credentials.json" and save it in the folder "credentials"
 
 # Usage
-TODO
+Run `gphotos.py -h` for the updated help version
+
+```
+positional arguments:
+  action                Action to perform
+  dest                  Destination folder
+
+options:
+  -h, --help            show this help message and exit
+  -f FROM, --from FROM  From date (yyyy/mm/dd) (default: today)
+  -t TO, --to TO        To date (yyyy/mm/dd) (default: today)
+```
+For example: `gphotos.py get ~/gphotos -f 2023/12/01`
 
 # Development
 
