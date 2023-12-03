@@ -10,11 +10,23 @@ Usage:
 import os
 import datetime
 import sys
+import argparse
 
 import requests
 import pandas as pd
 
 from google_api import GooglePhotosApi
+
+DATES_FORMAT = '%Y/%m/%d'
+
+
+def valid_date(s):
+    """ Date validation """
+    try:
+        return datetime.datetime.strptime(s, DATES_FORMAT).date()
+    except ValueError as e:
+        msg = "Invalid Date {s}"
+        raise argparse.ArgumentTypeError(msg) from e
 
 
 def get_items_file(items_df, dirname):
@@ -76,17 +88,12 @@ def download_photos(gapi, date_list, main_path, existing_files):
             get_items_file(not_downloaded_df, folder_name)
 
 
-def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
+def main(date_from, date_to, target_folder):
     """
         Download photos for a selected range of dates
-        Date format yyyy/mm/dd
     """
-    date_format = '%Y/%m/%d'
 
     google_photos_api = GooglePhotosApi()
-
-    if to_date is None:
-        to_date = datetime.datetime.today().strftime(date_format)
 
     # Check if target folder exists
     main_path = os.path.expanduser(target_folder)
@@ -95,24 +102,42 @@ def main(from_date, to_date=None, target_folder="~/gphotos_downloads"):
         sys.exit(1)
 
     # create a list with all dates between start date and today
-    sdate = datetime.datetime.strptime(from_date, date_format).date()
-    edate = datetime.datetime.strptime(to_date, date_format).date()
-    date_list = pd.date_range(sdate, edate-datetime.timedelta(days=1), freq='d')
-    print(f'Checking photos from {sdate} to {edate} into {main_path}')
+    date_list = pd.date_range(date_from, date_to-datetime.timedelta(days=0), freq='d')
+    if len(date_list) == 0:
+        print(f'Date list empty. No days between {date_from} and {date_to}')
+        sys.exit(5)
+
+    print(f'Checking photos from {date_list[0]} to {date_list[-1]} into {main_path}')
 
     # Get list of existing photos
     existing_files = [f for dp, dn, fn in os.walk(main_path) for f in fn]
-    # existing_files_df = pd.DataFrame(existing_files)
-    # existing_files_df = existing_files_df.rename(columns={0: "filename"})
-    # existing_files_df.head(2)
 
     # API call
     download_photos(google_photos_api, date_list, main_path, existing_files)
 
 
+def parse_args():
+    """ Manage the arguments received """
+
+    today = datetime.datetime.today().strftime(DATES_FORMAT)
+
+    parser = argparse.ArgumentParser(
+        description="Google Photos Tool",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("action", help="Action to perform", choices=["get"])
+    parser.add_argument("dest", help="Destination folder")
+    parser.add_argument("-f", "--from", help="From date (yyyy/mm/dd)", default=today, type=valid_date)
+    parser.add_argument("-t", "--to", help="To date (yyyy/mm/dd)", default=today, type=valid_date)
+
+    config = parser.parse_args()
+
+    return vars(config)
+
+
 if __name__ == "__main__":
-    # TODO: Check args ...
+    args = parse_args()
+
     try:
-        main(from_date='2023/11/15')
+        main(date_from=args["from"], date_to=args["to"], target_folder=args["dest"])
     except KeyboardInterrupt as ex:
         print("\nProcess stopped by the user", type(ex))
