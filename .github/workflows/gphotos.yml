@@ -8,7 +8,7 @@ on:
   pull_request:
     types: [opened, reopened, review_requested]
     branches:
-      - 'master'
+      - 'main'
     # paths:
     #   - 'google_photos/**'
   
